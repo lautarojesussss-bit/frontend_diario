@@ -5,7 +5,7 @@ import { TableRow, TableCell } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger, DialogDescription } from "@/components/ui/dialog"
 // <-- Sumamos el Calendario y el Popover:
 import { Calendar } from "@/components/ui/calendar" 
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -119,6 +119,10 @@ return (
       <DialogContent className="sm:max-w-[500px] bg-white sm:rounded-2xl">
         <DialogHeader>
           <DialogTitle>Editar Evento</DialogTitle>
+          {/* Descripción oculta */}
+          <DialogDescription className="sr-only">
+            Modifica los detalles de este evento o elimínalo de tu historial.
+          </DialogDescription>
         </DialogHeader>
         
         <form onSubmit={handleUpdate} className="flex flex-col gap-4 py-4">

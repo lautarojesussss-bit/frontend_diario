@@ -1,10 +1,10 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
 import { useState, useEffect } from 'react'
 import { format } from 'date-fns' 
 
 // 1. IMPORTAMOS TODOS LOS ÍCONOS EN UNA SOLA LÍNEA AQUÍ:
-import { Calendar as CalendarIcon, Check, ChevronsUpDown, Search, Plus } from 'lucide-react'
+import { Calendar as CalendarIcon, Check, ChevronsUpDown, Search, Plus, X } from 'lucide-react'
 
 import AchievementItem from './components/AchievementItem'
 import Login from './components/Login'
@@ -36,7 +36,7 @@ function App() {
     hora: '',
     descripcion: '',
     categoria: '',
-    tamano_bloque: 30
+    tamano_bloque: ''
   });
 
   // Función para abrir el modal con la hora y fecha actual
@@ -47,7 +47,7 @@ function App() {
       hora: format(now, 'HH:mm'),       // Hora de este mismo instante
       descripcion: '',
       categoria: '',
-      tamano_bloque: 30
+      tamano_bloque: ''
     });
     setIsAddOpen(true);
   };
@@ -55,13 +55,19 @@ function App() {
   // Efecto para escuchar el atajo Ctrl + N (o Cmd + N en Mac)
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'n') {
-        e.preventDefault(); // Evita que Chrome abra una ventana nueva
+      // 1. ESTO ES EL DETECTIVE: Te va a imprimir en la consola cada tecla que toques
+      console.log("Detectando tecla ->", "Key:", e.key, "| Code:", e.code, "| Alt presionado:", e.altKey);
+
+      // 2. Probemos con Alt + A (KeyA) por si la N está bloqueada por Windows
+      if (e.altKey && (e.code === 'KeyA' || e.code === 'KeyN')) {
+        e.preventDefault(); 
         abrirModalAgregar();
       }
     };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    
+    // Lo atamos al documento entero en la fase de captura para que tenga más prioridad
+    document.addEventListener('keydown', handleKeyDown, true);
+    return () => document.removeEventListener('keydown', handleKeyDown, true);
   }, []);
 
   // Función para enviar el nuevo evento al backend
@@ -296,6 +302,7 @@ const fetchEventos = async () => {
           <label className="text-sm font-medium text-slate-700">Buscar por palabra:</label>
           <div className="flex items-center w-[250px] rounded-xl border border-slate-200 bg-white px-3 shadow-sm focus-within:border-slate-400 focus-within:ring-4 focus-within:ring-slate-200">
             {/* Ícono de la lupa a la izquierda */}
+{/* Ícono de la lupa a la izquierda */}
             <Search className="h-4 w-4 text-slate-400 shrink-0" />
             
             {/* Input invisible que ocupa el centro */}
@@ -307,9 +314,20 @@ const fetchEventos = async () => {
               className="flex h-9 w-full border-0 bg-transparent px-2 py-1 text-sm shadow-none outline-none placeholder:text-slate-400"
             />
             
-            {/* Contador dinámico de resultados a la derecha */}
+            {/* NUEVO: Botón X para borrar rápido (solo aparece si hay texto) */}
+            {busqueda && (
+              <button 
+                onClick={() => setBusqueda("")}
+                className="text-slate-400 hover:text-slate-700 focus:outline-none p-1 transition-colors"
+                title="Limpiar búsqueda"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+            
+            {/* Contador dinámico (le agregamos un borde izquierdo para separarlo) */}
             {busqueda.trim() !== "" && (
-              <span className="text-xs text-slate-400 shrink-0 font-medium">
+              <span className="text-xs text-slate-400 shrink-0 font-medium border-l border-slate-200 pl-2 ml-1">
                 {eventos.length} res.
               </span>
             )}
@@ -327,16 +345,27 @@ const fetchEventos = async () => {
             Limpiar Filtros
           </Button>
 
-          <Button 
-            onClick={abrirModalAgregar} 
-            className="rounded-xl bg-slate-900 text-white hover:bg-slate-800 shadow-sm flex items-center gap-2"
-          >
-            <Plus className="h-4 w-4" />
-            <span>Nuevo Evento</span>
-            <kbd className="hidden sm:inline-flex items-center gap-1 rounded border border-slate-700 bg-slate-800 px-1.5 font-mono text-[10px] font-medium text-slate-300 ml-1">
-              Ctrl N
-            </kbd>
-          </Button>
+          {/* Botón y atajo agrupados */}
+          <div className="flex items-center gap-3">
+            <Button 
+              onClick={abrirModalAgregar} 
+              className="rounded-xl bg-slate-900 text-white hover:bg-slate-800 shadow-sm flex items-center gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              <span>Nuevo Evento</span>
+            </Button>
+            
+            {/* Atajo de teclado estilo Shadcn (afuera del botón) */}
+            <div className="hidden sm:flex items-center gap-1 text-slate-400">
+              <kbd className="inline-flex items-center justify-center rounded border border-slate-200 bg-slate-100 px-1.5 font-mono text-[11px] font-medium text-slate-500 shadow-sm h-5">
+                Alt
+              </kbd>
+              <span className="text-[10px]">+</span>
+              <kbd className="inline-flex items-center justify-center rounded border border-slate-200 bg-slate-100 px-1.5 font-mono text-[11px] font-medium text-slate-500 shadow-sm h-5">
+                N
+              </kbd>
+            </div>
+          </div>
           
         </div>
 
@@ -344,7 +373,7 @@ const fetchEventos = async () => {
 
       {/* --- TABLA --- */}
       <div className={`bg-white rounded-xl border shadow-sm overflow-hidden transition-opacity duration-200 ease-in-out ${isFetching ? "opacity-40 pointer-events-none" : "opacity-100"}`}>        <Table>
-          <TableHeader>
+          <TableHeader className="bg-slate-50">
             <TableRow>
               <TableHead className="font-semibold text-slate-900 whitespace-nowrap">Fecha</TableHead>
               <TableHead className="font-semibold text-slate-900">Hora</TableHead>
@@ -371,6 +400,83 @@ const fetchEventos = async () => {
           </p>
         )}
       </div>
+{/* --- MODAL PARA AGREGAR EVENTO --- */}
+      <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+        <DialogContent className="sm:max-w-[500px] bg-white sm:rounded-2xl">
+          <DialogHeader>
+            <DialogTitle>Agregar Nuevo Evento</DialogTitle>
+            {/* Agregamos esto oculto (sr-only = Screen Reader Only) para calmar a Shadcn */}
+            <DialogDescription className="sr-only">
+              Completa los datos para registrar un nuevo evento en tu historial.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <form onSubmit={handleAddSubmit} className="flex flex-col gap-4 py-4">
+            <div className="flex gap-4">
+              <div className="flex flex-col gap-1.5 w-1/2">
+                <label className="text-sm font-medium text-slate-700">Fecha</label>
+                {/* Calendario Shadcn */}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={`w-full justify-start text-left font-normal rounded-xl ${!addFormData.fecha && "text-muted-foreground"}`}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {addFormData.fecha ? format(new Date(addFormData.fecha + "T00:00:00"), "dd/MM/yyyy") : <span>Elegir fecha</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={addFormData.fecha ? new Date(addFormData.fecha + "T00:00:00") : undefined}
+                      onSelect={(date) => {
+                        if (date) {
+                          setAddFormData({ ...addFormData, fecha: format(date, 'yyyy-MM-dd') });
+                        }
+                      }}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div className="flex flex-col gap-1.5 w-1/2">
+                <label className="text-sm font-medium text-slate-700">Hora</label>
+                <Input type="time" name="hora" value={addFormData.hora} onChange={handleAddChange} required />
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium text-slate-700">Descripción</label>
+              <Textarea 
+                name="descripcion" 
+                rows="3" 
+                value={addFormData.descripcion} 
+                onChange={handleAddChange} 
+                required
+                autoFocus 
+              />
+            </div>
+
+            <div className="flex gap-4">
+              <div className="flex flex-col gap-1.5 w-1/2">
+                <label className="text-sm font-medium text-slate-700">Categoría</label>
+                <Input type="text" name="categoria" value={addFormData.categoria} onChange={handleAddChange} required />
+              </div>
+              <div className="flex flex-col gap-1.5 w-1/2">
+                <label className="text-sm font-medium text-slate-700">Duración (min)</label>
+                <Input type="number" name="tamano_bloque" value={addFormData.tamano_bloque} onChange={handleAddChange} required />
+              </div>
+            </div>
+
+            <DialogFooter className="mt-4 flex sm:justify-end">
+              <Button type="submit" className="rounded-xl w-full sm:w-auto">
+                Registrar Evento
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>      
     </div>
   )
 }
