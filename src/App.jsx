@@ -5,10 +5,11 @@ import { format } from 'date-fns'
 import { Card } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar"
-import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu" 
+import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card" 
 
 // 1. IMPORTAMOS TODOS LOS ÍCONOS EN UNA SOLA LÍNEA AQUÍ:
-import { Calendar as CalendarIcon, Check, ChevronsUpDown, Search, Plus, X, LayoutDashboard, LogOut, User as UserIcon } from 'lucide-react'
+import { Calendar as CalendarIcon, Check, ChevronsUpDown, Search, Plus, X, LayoutDashboard, LogOut, User as UserIcon, Loader2 } from 'lucide-react'
 
 import AchievementItem from './components/AchievementItem'
 import Login from './components/Login'
@@ -223,10 +224,14 @@ const fetchProgreso = async () => {
     setBusqueda("");
   };
 
-  if (loading) {
-    return <h2 className="text-center mt-12 text-slate-500 text-xl">Cargando...</h2>;
+if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh] gap-3">
+        <Loader2 className="h-8 w-8 animate-spin text-slate-900" />
+        <p className="text-slate-500 font-medium text-sm">Cargando información...</p>
+      </div>
+    );
   }
-
   if (!isLoggedIn) {
     return (
       <Login 
@@ -245,37 +250,36 @@ const fetchProgreso = async () => {
   return (
     <div className="p-8 max-w-6xl mx-auto">
 
-      {/* --- CABECERA DE LA APP --- */}
-      <div className="flex justify-between items-center mb-8 bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
-        <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-          <LayoutDashboard className="h-6 w-6 text-slate-600" />
-          Mi Diario
-        </h1>
+{/* --- CABECERA DE LA APP (Minimalista) --- */}
+      <div className="flex justify-end items-center mb-6">
         
         <div className="flex items-center gap-4">
-          <div className="hidden sm:flex flex-col items-end">
-            <span className="text-sm font-semibold text-slate-800">{username}</span>
-            <span className="text-xs text-slate-500">Plan de Productividad</span>
-          </div>
+          {/* Solo el nombre de usuario, sin textos extra */}
+          <span className="text-sm font-semibold text-slate-800">{username}</span>
           
-          <DropdownMenu>
-            <DropdownMenuTrigger className="focus:outline-none">
-              <Avatar className="border-2 border-slate-100 hover:border-slate-300 transition-colors cursor-pointer">
+          {/* HoverCard reemplaza al DropdownMenu */}
+          <HoverCard openDelay={200} closeDelay={200}>
+            <HoverCardTrigger asChild>
+              <Avatar className="border-2 border-transparent hover:border-slate-200 transition-colors cursor-pointer">
                 <AvatarFallback className="bg-slate-900 text-white font-medium">
                   {username ? username.substring(0, 2).toUpperCase() : <UserIcon className="h-4 w-4" />}
                 </AvatarFallback>
               </Avatar>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48 rounded-xl">
-              <DropdownMenuLabel>Mi Cuenta</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuCheckboxItem className="text-red-600 focus:bg-red-50 focus:text-red-700 cursor-pointer" onClick={handleLogout}>
+            </HoverCardTrigger>
+            
+            <HoverCardContent align="end" className="w-48 p-2 rounded-xl shadow-md border-slate-100">
+              <Button 
+                variant="ghost" 
+                className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg" 
+                onClick={handleLogout}
+              >
                 <LogOut className="mr-2 h-4 w-4" />
-                <span>Cerrar Sesión</span>
-              </DropdownMenuCheckboxItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+                Cerrar Sesión
+              </Button>
+            </HoverCardContent>
+          </HoverCard>
         </div>
+
       </div>
 
 {/* --- BOTONES DE CONFIGURACIÓN DE DASHBOARD --- */}
