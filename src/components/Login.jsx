@@ -29,7 +29,7 @@ export default function Login({ onLoginSuccess }) {
       
       const data = await res.json();
       if (res.ok) {
-        onLoginSuccess(data.username);
+        onLoginSuccess(data.username, data.avatar_url);
       } else {
         setError(data.message || "Ocurrió un error");
       }

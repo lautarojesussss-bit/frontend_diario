@@ -1,6 +1,6 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { format } from 'date-fns'
 import { Card } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
@@ -27,6 +27,8 @@ function App() {
   const [categorias, setCategorias] = useState([]); // Para guardar las opciones del Select
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [username, setUsername] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState("");
+  const fileInputRef = useRef(null); // Esto es para hacer clic en el input invisible
   const [loading, setLoading] = useState(true);
 
   // --- ESTADOS DE LOS FILTROS ---
@@ -38,8 +40,8 @@ function App() {
   const [isFetching, setIsFetching] = useState(false);
   const [progresoCorto, setProgresoCorto] = useState([]);
   const [progresoLargo, setProgresoLargo] = useState([]);
-  const [visiblesCorto, setVisiblesCorto] = useState([]); // Guarda qué tarjetas de corto plazo están prendidas
-  const [visiblesLargo, setVisiblesLargo] = useState([]); // Guarda qué tarjetas de largo plazo están prendidas
+  const [visiblesCorto, setVisiblesCorto] = useState(['Programación']); // Guarda qué tarjetas de corto plazo están prendidas
+  const [visiblesLargo, setVisiblesLargo] = useState(['Programación largo plazo']); // Guarda qué tarjetas de largo plazo están prendidas
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [addFormData, setAddFormData] = useState({
     fecha: '',
@@ -113,6 +115,32 @@ function App() {
     } catch (error) {
       console.error("Error al salir", error);
     }
+  };
+  
+  const handleAvatarUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Usamos FormData para empaquetar el archivo como si fuera un formulario HTML real
+    const formData = new FormData();
+    formData.append('avatar', file);
+
+    try {
+      const res = await fetch("http://localhost:5000/auth/api/upload_avatar", {
+        method: "POST",
+        body: formData,
+        credentials: "include"
+      });
+      const data = await res.json();
+      
+      if (res.ok) {
+        setAvatarUrl(data.avatar_url); // Actualizamos la foto en pantalla al instante!
+      } else {
+        alert("Error al subir imagen: " + data.message);
+      }
+    } catch (error) {
+      console.error("Error subiendo avatar", error);
+    }
   };  
 
   const handleAddChange = (e) => {
@@ -181,6 +209,7 @@ const fetchProgreso = async () => {
         if (res.ok) {
           const data = await res.json();
           setUsername(data.username);
+          setAvatarUrl(data.avatar_url || "");
           setIsLoggedIn(true);
           // Si está logueado, traemos la info
           fetchCategorias();
@@ -235,8 +264,9 @@ if (loading) {
   if (!isLoggedIn) {
     return (
       <Login 
-        onLoginSuccess={(user) => { 
-          setUsername(user);        // <-- Guardamos el nombre de usuario
+        onLoginSuccess={(user, avatar) => { 
+          setUsername(user);
+          setAvatarUrl(avatar || "");        // <-- Guardamos el nombre de usuario
           setIsLoggedIn(true);      // <-- Le avisamos a la app que ya entramos
           setLoading(true);         // <-- Ponemos la pantalla de carga
           fetchCategorias();        // <-- Traemos sus datos
@@ -260,11 +290,34 @@ if (loading) {
           {/* HoverCard reemplaza al DropdownMenu */}
           <HoverCard openDelay={200} closeDelay={200}>
             <HoverCardTrigger asChild>
-              <Avatar className="border-2 border-transparent hover:border-slate-200 transition-colors cursor-pointer">
-                <AvatarFallback className="bg-slate-900 text-white font-medium">
-                  {username ? username.substring(0, 2).toUpperCase() : <UserIcon className="h-4 w-4" />}
-                </AvatarFallback>
-              </Avatar>
+              {/* Agrupamos el avatar en un div cliqueable que dispara el input oculto */}
+              <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
+                
+                <Avatar className="h-10 w-10 border-2 border-transparent group-hover:border-slate-300 transition-colors">
+                  {/* Si hay URL muestra la imagen, si no, las iniciales */}
+                  {avatarUrl ? (
+                    <AvatarImage src={avatarUrl} alt="Avatar" className="object-cover" />
+                  ) : (
+                    <AvatarFallback className="bg-slate-900 text-white font-medium">
+                      {username ? username.substring(0, 2).toUpperCase() : <UserIcon className="h-4 w-4" />}
+                    </AvatarFallback>
+                  )}
+                </Avatar>
+
+                {/* Capa oscura al pasar el mouse indicando que se puede cambiar la foto */}
+                <div className="absolute inset-0 bg-black/50 rounded-full opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                  <span className="text-[10px] text-white font-semibold">Editar</span>
+                </div>
+
+                {/* El input real que hace el trabajo, pero está invisible */}
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleAvatarUpload}
+                  accept="image/*"
+                  className="hidden"
+                />
+              </div>
             </HoverCardTrigger>
             
             <HoverCardContent align="end" className="w-48 p-2 rounded-xl shadow-md border-slate-100">
@@ -284,55 +337,71 @@ if (loading) {
 
 {/* --- BOTONES DE CONFIGURACIÓN DE DASHBOARD --- */}
       <div className="flex gap-4 mb-6">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="rounded-xl flex items-center gap-2">
-              <LayoutDashboard className="h-4 w-4 text-slate-500" />
+        
+        {/* HOVER CARD CORTO PLAZO */}
+        <HoverCard openDelay={200} closeDelay={200}>
+          <HoverCardTrigger asChild>
+            <Button variant="outline" className="rounded-xl">
               Corto Plazo
             </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-56 rounded-xl" align="start">
-            <DropdownMenuLabel>Mostrar tarjetas diarias</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            {progresoCorto.map((act) => (
-              <DropdownMenuCheckboxItem
-                key={act.titulo}
-                checked={visiblesCorto.includes(act.titulo)}
-                onCheckedChange={(checked) => {
-                  if (checked) setVisiblesCorto([...visiblesCorto, act.titulo]);
-                  else setVisiblesCorto(visiblesCorto.filter(t => t !== act.titulo));
-                }}
-              >
-                {act.titulo}
-              </DropdownMenuCheckboxItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
+          </HoverCardTrigger>
+          <HoverCardContent className="w-56 rounded-xl p-1" align="start">
+            <div className="px-2 py-1.5 text-sm font-semibold text-slate-900">Mostrar tarjetas diarias</div>
+            <div className="h-px bg-slate-100 my-1 mx-2" />
+            
+            {progresoCorto.map((act) => {
+              const isChecked = visiblesCorto.includes(act.titulo);
+              return (
+                <div
+                  key={act.titulo}
+                  className="relative flex cursor-pointer select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none hover:bg-slate-100 text-slate-700 hover:text-slate-900 transition-colors"
+                  onClick={() => {
+                    if (isChecked) setVisiblesCorto(visiblesCorto.filter(t => t !== act.titulo));
+                    else setVisiblesCorto([...visiblesCorto, act.titulo]);
+                  }}
+                >
+                  <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
+                    {isChecked && <Check className="h-4 w-4 text-slate-900" />}
+                  </span>
+                  {act.titulo}
+                </div>
+              )
+            })}
+          </HoverCardContent>
+        </HoverCard>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="rounded-xl flex items-center gap-2">
-              <LayoutDashboard className="h-4 w-4 text-slate-500" />
+        {/* HOVER CARD LARGO PLAZO */}
+        <HoverCard openDelay={200} closeDelay={200}>
+          <HoverCardTrigger asChild>
+            <Button variant="outline" className="rounded-xl">
               Largo Plazo
             </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-56 rounded-xl" align="start">
-            <DropdownMenuLabel>Mostrar tarjetas globales</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            {progresoLargo.map((act) => (
-              <DropdownMenuCheckboxItem
-                key={act.titulo}
-                checked={visiblesLargo.includes(act.titulo)}
-                onCheckedChange={(checked) => {
-                  if (checked) setVisiblesLargo([...visiblesLargo, act.titulo]);
-                  else setVisiblesLargo(visiblesLargo.filter(t => t !== act.titulo));
-                }}
-              >
-                {act.titulo}
-              </DropdownMenuCheckboxItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
+          </HoverCardTrigger>
+          <HoverCardContent className="w-56 rounded-xl p-1" align="start">
+            <div className="px-2 py-1.5 text-sm font-semibold text-slate-900">Mostrar tarjetas globales</div>
+            <div className="h-px bg-slate-100 my-1 mx-2" />
+            
+            {progresoLargo.map((act) => {
+              const isChecked = visiblesLargo.includes(act.titulo);
+              return (
+                <div
+                  key={act.titulo}
+                  className="relative flex cursor-pointer select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none hover:bg-slate-100 text-slate-700 hover:text-slate-900 transition-colors"
+                  onClick={() => {
+                    if (isChecked) setVisiblesLargo(visiblesLargo.filter(t => t !== act.titulo));
+                    else setVisiblesLargo([...visiblesLargo, act.titulo]);
+                  }}
+                >
+                  <span className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
+                    {isChecked && <Check className="h-4 w-4 text-slate-900" />}
+                  </span>
+                  {act.titulo}
+                </div>
+              )
+            })}
+          </HoverCardContent>
+        </HoverCard>
+
       </div>
 
       {/* --- GRID DE TARJETAS DE PROGRESO --- */}
