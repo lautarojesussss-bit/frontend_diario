@@ -1,10 +1,13 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
 import { useState, useEffect } from 'react'
-import { format } from 'date-fns' 
+import { format } from 'date-fns'
+import { Card } from "@/components/ui/card"
+import { Progress } from "@/components/ui/progress"
+import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu" 
 
 // 1. IMPORTAMOS TODOS LOS ÍCONOS EN UNA SOLA LÍNEA AQUÍ:
-import { Calendar as CalendarIcon, Check, ChevronsUpDown, Search, Plus, X } from 'lucide-react'
+import { Calendar as CalendarIcon, Check, ChevronsUpDown, Search, Plus, X, LayoutDashboard } from 'lucide-react'
 
 import AchievementItem from './components/AchievementItem'
 import Login from './components/Login'
@@ -30,6 +33,10 @@ function App() {
   const [debouncedBusqueda, setDebouncedBusqueda] = useState("");
   const [openCategoria, setOpenCategoria] = useState(false);
   const [isFetching, setIsFetching] = useState(false);
+  const [progresoCorto, setProgresoCorto] = useState([]);
+  const [progresoLargo, setProgresoLargo] = useState([]);
+  const [visiblesCorto, setVisiblesCorto] = useState([]); // Guarda qué tarjetas de corto plazo están prendidas
+  const [visiblesLargo, setVisiblesLargo] = useState([]); // Guarda qué tarjetas de largo plazo están prendidas
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [addFormData, setAddFormData] = useState({
     fecha: '',
@@ -84,7 +91,8 @@ function App() {
       });
       if (res.ok) {
         setIsAddOpen(false);
-        fetchEventos(); // Recargamos la tabla
+        fetchEventos();
+        fetchProgreso(); // Recargamos la tabla
         fetchCategorias(); // Por si agregó una categoría nueva
       }
     } catch (error) {
@@ -110,7 +118,7 @@ function App() {
   };
 
   // Función modificada para mandar todos los filtros a tu backend
-const fetchEventos = async () => {
+  const fetchEventos = async () => {
     setIsFetching(true); // <-- 1. Al instante ponemos la tabla borrosa
     try {
       let url = new URL("http://localhost:5000/api/eventos");
@@ -137,12 +145,26 @@ const fetchEventos = async () => {
     }
   };
 
+const fetchProgreso = async () => {
+    try {
+      const res = await fetch("http://localhost:5000/api/progreso", { credentials: "include" });
+      if (res.ok) {
+        const data = await res.json();
+        setProgresoCorto(data.corto_plazo || []);
+        setProgresoLargo(data.largo_plazo || []);
+      }
+    } catch (error) {
+      console.error("Error al traer progreso:", error);
+    }
+  };  
+
   // Carga inicial
 // 1. Carga inicial (Acá verificamos la sesión y apagamos el loading)
 // 1. Carga inicial
   useEffect(() => {
     fetchCategorias();
-    fetchEventos(); 
+    fetchEventos();
+    fetchProgreso() 
   }, []);
 
   // 2. NUEVO: Efecto exclusivo para hacer debouncing solo del texto
@@ -158,6 +180,7 @@ const fetchEventos = async () => {
   useEffect(() => {
     if (isLoggedIn) {
       fetchEventos();
+      fetchProgreso();
     }
   // Atento acá: usamos debouncedBusqueda en vez de busqueda
   }, [fechaFiltro, categoriaFiltro, debouncedBusqueda]);
@@ -189,6 +212,110 @@ const fetchEventos = async () => {
 
   return (
     <div className="p-8 max-w-6xl mx-auto">
+
+{/* --- BOTONES DE CONFIGURACIÓN DE DASHBOARD --- */}
+      <div className="flex gap-4 mb-6">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" className="rounded-xl flex items-center gap-2">
+              <LayoutDashboard className="h-4 w-4 text-slate-500" />
+              Corto Plazo
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-56 rounded-xl" align="start">
+            <DropdownMenuLabel>Mostrar tarjetas diarias</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            {progresoCorto.map((act) => (
+              <DropdownMenuCheckboxItem
+                key={act.titulo}
+                checked={visiblesCorto.includes(act.titulo)}
+                onCheckedChange={(checked) => {
+                  if (checked) setVisiblesCorto([...visiblesCorto, act.titulo]);
+                  else setVisiblesCorto(visiblesCorto.filter(t => t !== act.titulo));
+                }}
+              >
+                {act.titulo}
+              </DropdownMenuCheckboxItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" className="rounded-xl flex items-center gap-2">
+              <LayoutDashboard className="h-4 w-4 text-slate-500" />
+              Largo Plazo
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-56 rounded-xl" align="start">
+            <DropdownMenuLabel>Mostrar tarjetas globales</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            {progresoLargo.map((act) => (
+              <DropdownMenuCheckboxItem
+                key={act.titulo}
+                checked={visiblesLargo.includes(act.titulo)}
+                onCheckedChange={(checked) => {
+                  if (checked) setVisiblesLargo([...visiblesLargo, act.titulo]);
+                  else setVisiblesLargo(visiblesLargo.filter(t => t !== act.titulo));
+                }}
+              >
+                {act.titulo}
+              </DropdownMenuCheckboxItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
+      {/* --- GRID DE TARJETAS DE PROGRESO --- */}
+      {(visiblesCorto.length > 0 || visiblesLargo.length > 0) && (
+        <div className="flex flex-wrap gap-4 mb-8">
+          
+          {/* Tarjetas Corto Plazo (Blancas) */}
+          {progresoCorto.filter(act => visiblesCorto.includes(act.titulo)).map(act => (
+            <Card key={act.titulo} className="w-64 p-5 rounded-2xl shadow-sm bg-white border-slate-200 transition-all hover:shadow-md">
+              <div className="flex flex-col gap-1">
+                <h4 className="font-semibold text-slate-800">{act.titulo}</h4>
+                <p className="text-[10px] text-slate-400 uppercase tracking-wider truncate" title={act.categoria.join(', ')}>
+                  {act.categoria.join(', ')}
+                </p>
+                <div className="mt-3 flex items-baseline gap-1">
+                  <span className="text-4xl font-bold text-slate-900">{(act.total_minutos / 60).toFixed(2)}</span>
+                  <span className="text-sm font-medium text-slate-500">/ {(act.meta_minutos / 60).toFixed(0)} hs</span>
+                </div>
+                <div className="mt-4">
+                  {/* Usamos tu color verde original */}
+                  <Progress value={act.progreso_porcentaje} className="h-2" indicatorColor="bg-[#97f38bff]" />
+                  <span className="text-xs font-semibold text-slate-600 mt-1.5 block text-right">
+                    {Math.round(act.progreso_porcentaje)}%
+                  </span>
+                </div>
+              </div>
+            </Card>
+          ))}
+
+          {/* Tarjetas Largo Plazo (Fondo Gris Slate-50) */}
+          {progresoLargo.filter(act => visiblesLargo.includes(act.titulo)).map(act => (
+            <Card key={act.titulo} className="w-64 p-5 rounded-2xl shadow-sm bg-slate-50 border-slate-200 transition-all hover:shadow-md">
+              <div className="flex flex-col gap-1">
+                <h4 className="font-semibold text-slate-800">{act.titulo}</h4>
+                <p className="text-[10px] text-slate-400 uppercase tracking-wider truncate" title={act.categoria.join(', ')}>
+                  {act.categoria.join(', ')}
+                </p>
+                <div className="mt-3 flex items-baseline gap-1">
+                  <span className="text-4xl font-bold text-slate-900">{(act.total_minutos / 60).toFixed(2)}</span>
+                  <span className="text-sm font-medium text-slate-500">/ {(act.meta_minutos / 60).toFixed(0)} hs</span>
+                </div>
+                <div className="mt-4">
+                  <Progress value={act.progreso_porcentaje} className="h-2" indicatorColor="bg-[#97f38bff]" />
+                  <span className="text-xs font-semibold text-slate-600 mt-1.5 block text-right">
+                    {Math.round(act.progreso_porcentaje)}%
+                  </span>
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
       
       {/* --- BARRA DE FILTROS ESTILO SHADCN --- */}
       <div className="flex flex-wrap gap-4 items-end mb-6">
@@ -384,12 +511,7 @@ const fetchEventos = async () => {
           </TableHeader>
           <TableBody>
             {eventos.map((evento) => (
-              <AchievementItem 
-                key={evento.id} 
-                evento={evento} 
-                busqueda={debouncedBusqueda}
-                onUpdate={fetchEventos} 
-              />
+            <AchievementItem key={evento.id} evento={evento} busqueda={debouncedBusqueda} onUpdate={() => { fetchEventos(); fetchProgreso(); }} />
             ))}
           </TableBody>
         </Table>
