@@ -1,73 +1,101 @@
 import { useState } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { LayoutDashboard } from 'lucide-react';
 
-// Le pasamos una "prop" llamada onLoginSuccess que ejecutaremos cuando el login sea exitoso
-function Login({ onLoginSuccess }) {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+export default function Login({ onLoginSuccess }) {
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [formData, setFormData] = useState({ username: '', password: '' });
 
-  const handleLogin = async (e) => {
-    e.preventDefault(); // Evitamos que la página se recargue al mandar el formulario
+  const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
+
+  // Maneja tanto el login como el registro dependiendo del endpoint que le pasemos
+  const handleSubmit = async (e, endpoint) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError("");
 
     try {
-      const response = await fetch("http://localhost:5000/auth/api/login", {
+      // Nota: asumo que tu prefijo en app.py es /auth
+      const res = await fetch(`http://localhost:5000/auth/api/${endpoint}`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        // ¡ESTA ES LA LÍNEA MÁGICA! 
-        // Le dice al navegador: "Guardá y enviá las cookies de sesión de Flask"
-        credentials: "include", 
-        body: JSON.stringify({ username, password }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+        credentials: "include" // CLAVE para que envíe/reciba las cookies de sesión
       });
-
-      const data = await response.json();
-
-      if (response.ok && data.status === "success") {
-        // Si sale bien, avisamos a App.jsx que ya estamos logueados
-        onLoginSuccess();
+      
+      const data = await res.json();
+      if (res.ok) {
+        onLoginSuccess(data.username);
       } else {
-        // Si sale mal, mostramos el mensaje de error de Flask
-        setError(data.message);
+        setError(data.message || "Ocurrió un error");
       }
     } catch (err) {
-      setError("Error al conectar con el servidor");
+      setError("Error de conexión con el servidor");
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <div style={{ maxWidth: '400px', margin: '50px auto', padding: '20px', border: '1px solid #ccc', borderRadius: '8px' }}>
-      <h2 style={{ textAlign: 'center' }}>Iniciar Sesión</h2>
-      
-      {error && <p style={{ color: 'red', textAlign: 'center' }}>{error}</p>}
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
+      <Card className="w-full max-w-md rounded-2xl shadow-sm border-slate-200">
+        <CardHeader className="text-center pb-2">
+          <div className="mx-auto bg-slate-900 w-12 h-12 rounded-xl flex items-center justify-center mb-4 shadow-sm">
+            <LayoutDashboard className="text-white h-6 w-6" />
+          </div>
+          <CardTitle className="text-2xl font-bold text-slate-800">Bienvenido</CardTitle>
+          <CardDescription>Gestiona tu tiempo y hábitos diarios</CardDescription>
+        </CardHeader>
+        
+        <CardContent>
+          <Tabs defaultValue="login" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 mb-6 bg-slate-100 rounded-xl p-1">
+              <TabsTrigger value="login" className="rounded-lg">Iniciar Sesión</TabsTrigger>
+              <TabsTrigger value="register" className="rounded-lg">Registrarse</TabsTrigger>
+            </TabsList>
 
-      <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-        <div>
-          <label>Nombre de usuario:</label>
-          <input 
-            type="text" 
-            value={username} 
-            onChange={(e) => setUsername(e.target.value)} 
-            style={{ width: '100%', padding: '8px', marginTop: '5px' }}
-            required 
-          />
-        </div>
-        <div>
-          <label>Contraseña:</label>
-          <input 
-            type="password" 
-            value={password} 
-            onChange={(e) => setPassword(e.target.value)} 
-            style={{ width: '100%', padding: '8px', marginTop: '5px' }}
-            required 
-          />
-        </div>
-        <button type="submit" style={{ padding: '10px', backgroundColor: '#0d6efd', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
-          Ingresar
-        </button>
-      </form>
+            {/* PESTAÑA LOGIN */}
+            <TabsContent value="login">
+              <form onSubmit={(e) => handleSubmit(e, "login")} className="flex flex-col gap-4">
+                {error && <p className="text-sm text-red-500 text-center font-medium bg-red-50 py-2 rounded-lg">{error}</p>}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-sm font-medium text-slate-700">Usuario</label>
+                  <Input name="username" required onChange={handleChange} className="rounded-xl" />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-sm font-medium text-slate-700">Contraseña</label>
+                  <Input name="password" type="password" required onChange={handleChange} className="rounded-xl" />
+                </div>
+                <Button type="submit" disabled={isLoading} className="w-full rounded-xl bg-slate-900 mt-2">
+                  {isLoading ? "Cargando..." : "Entrar"}
+                </Button>
+              </form>
+            </TabsContent>
+
+            {/* PESTAÑA REGISTRO */}
+            <TabsContent value="register">
+              <form onSubmit={(e) => handleSubmit(e, "register")} className="flex flex-col gap-4">
+                {error && <p className="text-sm text-red-500 text-center font-medium bg-red-50 py-2 rounded-lg">{error}</p>}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-sm font-medium text-slate-700">Nuevo Usuario</label>
+                  <Input name="username" required onChange={handleChange} className="rounded-xl" />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-sm font-medium text-slate-700">Contraseña</label>
+                  <Input name="password" type="password" required onChange={handleChange} className="rounded-xl" />
+                </div>
+                <Button type="submit" disabled={isLoading} className="w-full rounded-xl bg-slate-900 mt-2">
+                  {isLoading ? "Creando..." : "Crear Cuenta"}
+                </Button>
+              </form>
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
     </div>
   );
 }
-
-export default Login;

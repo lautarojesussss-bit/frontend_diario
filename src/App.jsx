@@ -4,10 +4,11 @@ import { useState, useEffect } from 'react'
 import { format } from 'date-fns'
 import { Card } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
+import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar"
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu" 
 
 // 1. IMPORTAMOS TODOS LOS ÍCONOS EN UNA SOLA LÍNEA AQUÍ:
-import { Calendar as CalendarIcon, Check, ChevronsUpDown, Search, Plus, X, LayoutDashboard } from 'lucide-react'
+import { Calendar as CalendarIcon, Check, ChevronsUpDown, Search, Plus, X, LayoutDashboard, LogOut, User as UserIcon } from 'lucide-react'
 
 import AchievementItem from './components/AchievementItem'
 import Login from './components/Login'
@@ -24,6 +25,7 @@ function App() {
   const [eventos, setEventos] = useState([]);
   const [categorias, setCategorias] = useState([]); // Para guardar las opciones del Select
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [username, setUsername] = useState("");
   const [loading, setLoading] = useState(true);
 
   // --- ESTADOS DE LOS FILTROS ---
@@ -100,6 +102,18 @@ function App() {
     }
   };
 
+
+  const handleLogout = async () => {
+    try {
+      await fetch("http://localhost:5000/auth/api/logout", { method: "POST", credentials: "include" });
+      setIsLoggedIn(false);
+      setUsername("");
+      setEventos([]);
+    } catch (error) {
+      console.error("Error al salir", error);
+    }
+  };  
+
   const handleAddChange = (e) => {
     setAddFormData({ ...addFormData, [e.target.name]: e.target.value });
   };
@@ -158,13 +172,29 @@ const fetchProgreso = async () => {
     }
   };  
 
-  // Carga inicial
-// 1. Carga inicial (Acá verificamos la sesión y apagamos el loading)
-// 1. Carga inicial
+// 1. Carga inicial (Ahora con verificación de sesión)
   useEffect(() => {
-    fetchCategorias();
-    fetchEventos();
-    fetchProgreso() 
+    const verificarSesion = async () => {
+      try {
+        const res = await fetch("http://localhost:5000/auth/api/check_auth", { credentials: "include" });
+        if (res.ok) {
+          const data = await res.json();
+          setUsername(data.username);
+          setIsLoggedIn(true);
+          // Si está logueado, traemos la info
+          fetchCategorias();
+          fetchEventos();
+          fetchProgreso();
+        } else {
+          setIsLoggedIn(false);
+          setLoading(false);
+        }
+      } catch (error) {
+        setIsLoggedIn(false);
+        setLoading(false);
+      }
+    };
+    verificarSesion();
   }, []);
 
   // 2. NUEVO: Efecto exclusivo para hacer debouncing solo del texto
@@ -197,14 +227,16 @@ const fetchProgreso = async () => {
     return <h2 className="text-center mt-12 text-slate-500 text-xl">Cargando...</h2>;
   }
 
-  // 3. Si no está logueado, mostramos el login. Si el login es exitoso, cargamos todo de nuevo
   if (!isLoggedIn) {
     return (
       <Login 
-        onLoginSuccess={() => { 
-          setLoading(true);
-          fetchCategorias(); 
-          fetchEventos();
+        onLoginSuccess={(user) => { 
+          setUsername(user);        // <-- Guardamos el nombre de usuario
+          setIsLoggedIn(true);      // <-- Le avisamos a la app que ya entramos
+          setLoading(true);         // <-- Ponemos la pantalla de carga
+          fetchCategorias();        // <-- Traemos sus datos
+          fetchEventos(); 
+          fetchProgreso();          // <-- (Y sumamos el progreso que antes no estaba)
         }} 
       />
     );
@@ -212,6 +244,39 @@ const fetchProgreso = async () => {
 
   return (
     <div className="p-8 max-w-6xl mx-auto">
+
+      {/* --- CABECERA DE LA APP --- */}
+      <div className="flex justify-between items-center mb-8 bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+        <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
+          <LayoutDashboard className="h-6 w-6 text-slate-600" />
+          Mi Diario
+        </h1>
+        
+        <div className="flex items-center gap-4">
+          <div className="hidden sm:flex flex-col items-end">
+            <span className="text-sm font-semibold text-slate-800">{username}</span>
+            <span className="text-xs text-slate-500">Plan de Productividad</span>
+          </div>
+          
+          <DropdownMenu>
+            <DropdownMenuTrigger className="focus:outline-none">
+              <Avatar className="border-2 border-slate-100 hover:border-slate-300 transition-colors cursor-pointer">
+                <AvatarFallback className="bg-slate-900 text-white font-medium">
+                  {username ? username.substring(0, 2).toUpperCase() : <UserIcon className="h-4 w-4" />}
+                </AvatarFallback>
+              </Avatar>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48 rounded-xl">
+              <DropdownMenuLabel>Mi Cuenta</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuCheckboxItem className="text-red-600 focus:bg-red-50 focus:text-red-700 cursor-pointer" onClick={handleLogout}>
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Cerrar Sesión</span>
+              </DropdownMenuCheckboxItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
 
 {/* --- BOTONES DE CONFIGURACIÓN DE DASHBOARD --- */}
       <div className="flex gap-4 mb-6">
