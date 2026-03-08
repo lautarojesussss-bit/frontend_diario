@@ -8,6 +8,8 @@ import {Avatar, AvatarFallback, AvatarImage} from "@/components/ui/avatar"
 import Graficos from './components/Graficos'
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card" 
+import { Toaster } from "@/components/ui/sonner"
+import { toast } from "sonner"
 
 // 1. IMPORTAMOS TODOS LOS ÍCONOS EN UNA SOLA LÍNEA AQUÍ:
 import { Calendar as CalendarIcon, Check, ChevronsUpDown, Search, Plus, X, LayoutDashboard, LogOut, User as UserIcon, Loader2, LineChart } from 'lucide-react'
@@ -101,7 +103,13 @@ function App() {
         fetchEventos();
         fetchProgreso(); // Recargamos la tabla
         fetchCategorias(); // Por si agregó una categoría nueva
+        // --- LA MAGIA DE SONNER ---
+        // Al poner .success, ya le pone el ícono del CheckCircle verde automáticamente
+        toast.success("Evento agregado exitosamente", {
+          description: "El registro ya se encuentra guardado en tu diario.",
+        });
       }
+
     } catch (error) {
       console.error("Error al crear:", error);
     }
@@ -466,7 +474,6 @@ if (loading) {
             variant={vistaActual === "diario" ? "secondary" : "ghost"} 
             className={`rounded-xl px-5 ${vistaActual === "diario" ? "bg-slate-100 text-slate-900" : "text-slate-500"}`}
             onClick={() => setVistaActual("diario")}>
-            <LayoutDashboard className="mr-2 h-4 w-4" />
             Diario y Tabla
           </Button>
           <Button 
@@ -751,7 +758,9 @@ if (loading) {
             </DialogFooter>
           </form>
         </DialogContent>
-      </Dialog>      
+      </Dialog>
+      {/* Le agregamos richColors para que los éxitos sean verdes y los errores rojos automáticamente */}
+      <Toaster position="bottom-right" />           
     </div>
   )
 }

@@ -6,9 +6,21 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger, DialogDescription } from "@/components/ui/dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 // <-- Sumamos el Calendario y el Popover:
 import { Calendar } from "@/components/ui/calendar" 
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { toast } from "sonner"
 
 // La magia del resaltador sigue intacta
 const Resaltador = ({ texto, busqueda }) => {
@@ -67,6 +79,10 @@ function AchievementItem({ evento, busqueda, onUpdate }) {
       if (res.ok) {
         setIsOpen(false); // Cerramos la carta
         if (onUpdate) onUpdate(); // Recargamos la tabla de App.jsx
+        toast.success("Evento actualizado", {
+          description: "Los cambios se guardaron exitosamente.",
+        });
+
       }
     } catch (error) {
       console.error("Error al actualizar:", error);
@@ -75,21 +91,21 @@ function AchievementItem({ evento, busqueda, onUpdate }) {
 
   // Función para borrar el evento usando la nueva ruta API
   const handleDelete = async () => {
-    if (window.confirm('¿Estás seguro de que quieres borrar este evento?')) {
-      try {
-        // APUNTAMOS A LA NUEVA RUTA /api/
-        const res = await fetch(`http://localhost:5000/api/borrar_evento/${id}`, {
-          method: 'POST',
-          credentials: "include"
+    try {
+      const res = await fetch(`http://localhost:5000/api/borrar_evento/${id}`, {
+        method: 'POST',
+        credentials: "include"
+      });
+      
+      if (res.ok) {
+        setIsOpen(false);
+        if (onUpdate) onUpdate();
+        toast.success("Evento eliminado", {
+          description: "El registro fue borrado de tu diario.",
         });
-        
-        if (res.ok) {
-          setIsOpen(false);
-          if (onUpdate) onUpdate();
-        }
-      } catch (error) {
-        console.error("Error al eliminar:", error);
       }
+    } catch (error) {
+      console.error("Error al eliminar:", error);
     }
   };
 
@@ -191,13 +207,42 @@ return (
           </div>
 
           <DialogFooter className="mt-4 flex sm:justify-end gap-2">
-            {/* Botón Negro (Por defecto) */}
-            <Button type="button" onClick={handleDelete}>
-              Eliminar
-            </Button>
+          {/* --- NUEVA ALERTA DE SHADCN ENVOLVIENDO EL BOTÓN --- */}
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                {/* 1. Volvemos a tu botón negro original */}
+                <Button type="button" className="bg-slate-900 text-white hover:bg-slate-900">
+                  Eliminar
+                </Button>
+              </AlertDialogTrigger>
+              
+              {/* 2. Le quitamos el padding (p-0) y el hueco (gap-0) por defecto para armar nuestro diseño en bloques */}
+              <AlertDialogContent className="bg-white sm:rounded-2xl p-0 gap-0 overflow-hidden border-slate-200 shadow-lg">
+                
+                {/* Bloque superior blanco con el texto */}
+                <div className="p-6">
+                  <AlertDialogHeader>
+                    <AlertDialogTitle className="text-slate-900">¿Estás completamente seguro?</AlertDialogTitle>
+                    <AlertDialogDescription className="mt-2 text-slate-500">
+                      Esta acción no se puede deshacer. El evento será eliminado permanentemente de tu historial y no sumará horas a tu progreso.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                </div>
+
+                {/* Bloque inferior gris (Footer) */}
+                <AlertDialogFooter className="bg-slate-50 border-t border-slate-200 py-3 px-6">
+                  <AlertDialogCancel className="rounded-xl border-slate-300">Cancelar</AlertDialogCancel>
+                  {/* Botón confirmar negro */}
+                  <AlertDialogAction onClick={handleDelete} className="bg-slate-900 hover:bg-slate-900 text-white rounded-xl">
+                    Confirmar
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+
+              </AlertDialogContent>
+            </AlertDialog>
             
             {/* Botón Clarito (Outline) */}
-            <Button type="submit" variant="outline">
+            <Button type="submit" variant="outline" className="rounded-xl border-slate-300">
               Guardar cambios
             </Button>
           </DialogFooter>
