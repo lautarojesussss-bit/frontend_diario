@@ -132,7 +132,7 @@ return (
       </DialogTrigger>
 
       {/* --- CARTA FLOTANTE (MODAL) --- */}
-      <DialogContent className="sm:max-w-[500px] bg-white sm:rounded-2xl">
+      <DialogContent className="sm:max-w-[700px] bg-white sm:rounded-2xl">
         <DialogHeader>
           <DialogTitle>Editar Evento</DialogTitle>
           {/* Descripción oculta */}
@@ -211,7 +211,7 @@ return (
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 {/* 1. Volvemos a tu botón negro original */}
-                <Button type="button" className="bg-slate-900 text-white hover:bg-slate-900">
+                <Button type="button" className="bg-slate-900 text-white hover:bg-slate-900 rounded-xl">
                   Eliminar
                 </Button>
               </AlertDialogTrigger>
@@ -231,7 +231,7 @@ return (
 
                 {/* Bloque inferior gris (Footer) */}
                 <AlertDialogFooter className="bg-slate-50 border-t border-slate-200 py-3 px-6">
-                  <AlertDialogCancel className="rounded-xl border-slate-300">Cancelar</AlertDialogCancel>
+                  <AlertDialogCancel className="rounded-xl">Cancelar</AlertDialogCancel>
                   {/* Botón confirmar negro */}
                   <AlertDialogAction onClick={handleDelete} className="bg-slate-900 hover:bg-slate-900 text-white rounded-xl">
                     Confirmar
@@ -242,7 +242,7 @@ return (
             </AlertDialog>
             
             {/* Botón Clarito (Outline) */}
-            <Button type="submit" variant="outline" className="rounded-xl border-slate-300">
+            <Button type="submit" variant="outline" className="rounded-xl">
               Guardar cambios
             </Button>
           </DialogFooter>

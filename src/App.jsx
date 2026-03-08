@@ -25,6 +25,8 @@ import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+
 function App() {
   const [eventos, setEventos] = useState([]);
   const [categorias, setCategorias] = useState([]); // Para guardar las opciones del Select
@@ -466,9 +468,10 @@ if (loading) {
       )}
       
       {/* --- CABECERA DE VISTAS Y ACCIÓN PRINCIPAL --- */}
-      <div className="flex justify-between items-center mb-6 border-b border-slate-200 pb-2">
+      {/* Cambiamos justify-between por justify-start y agregamos un gap */}
+      <div className="flex justify-start items-center gap-6 mb-6">
         
-        {/* Izquierda: Selector de vistas (Tabs) */}
+        {/* Selector de vistas (Tabs) */}
         <div className="flex gap-2">
           <Button 
             variant={vistaActual === "diario" ? "secondary" : "ghost"} 
@@ -485,7 +488,7 @@ if (loading) {
           </Button>
         </div>
 
-        {/* Derecha: Botón Global de Nuevo Evento */}
+        {/* Botón Global de Nuevo Evento (Ahora agrupado con una línea divisoria) */}
         <div className="flex items-center gap-3">
           <Button 
             onClick={abrirModalAgregar} 
@@ -506,154 +509,148 @@ if (loading) {
         </div>
       </div>
 
-{/* --- CONTENIDO DINÁMICO SEGÚN LA VISTA --- */}
+      {/* --- CONTENIDO DINÁMICO SEGÚN LA VISTA --- */}
       {vistaActual === "graficos" ? (
         <Graficos />
       ) : (
         <>
-        {/* --- BARRA DE FILTROS ESTILO SHADCN --- */}
-        <div className="flex flex-wrap gap-4 items-end mb-6">
-          
-        {/* Filtro de Fecha (Con Calendario Flotante) */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-slate-700">Filtrar por Fecha:</label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button 
-                  variant="outline" 
-                  className={`w-[220px] justify-start text-left font-normal bg-white ${!fechaFiltro && "text-muted-foreground"}`}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {fechaFiltro ? format(fechaFiltro, "dd/MM/yyyy") : <span>Todas las fechas</span>}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={fechaFiltro}
-                  onSelect={setFechaFiltro}
-                  initialFocus
-                />
-                {/* --- AGREGAMOS LOS BOTONES ACÁ ABAJO --- */}
-                <div className="flex items-center justify-between p-2 border-t border-slate-100">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setFechaFiltro(null)}
-                    className="text-slate-600 hover:text-slate-900 font-normal h-8"
-                  >
-                    Limpiar
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setFechaFiltro(new Date())}
-                    className="text-blue-600 hover:text-blue-800 font-medium h-8"
-                  >
-                    Hoy
-                  </Button>
-                </div>
-              </PopoverContent>
-            </Popover>
-          </div>
-
-          {/* Filtro de Categoría (Combobox con buscador) */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-slate-700">Filtrar por Categoría:</label>
-            <Popover open={openCategoria} onOpenChange={setOpenCategoria}>
-              <PopoverTrigger asChild>
-                {/* Este botón imita exactamente la estética de un Input de Shadcn */}
-                <Button
-                  variant="outline"
-                  role="combobox"
-                  aria-expanded={openCategoria}
-                  className="w-[200px] justify-between bg-white font-normal text-slate-700 hover:bg-slate-50"
-                >
-                  {/* Agregamos el span con "truncate" para que no se desborde */}
-                  <span className="truncate">
-                    {categoriaFiltro === "todas"
-                      ? "Todas"
-                      : categorias.find((cat) => cat === categoriaFiltro) || categoriaFiltro}
-                  </span>
-                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-[200px] p-0" align="start">
-                <Command>
-                  <CommandInput placeholder="Buscar categoría..." />
-                  <CommandList>
-                    <CommandEmpty>No se encontró...</CommandEmpty>
-                    <CommandGroup>
-                      <CommandItem
-                        value="todas"
-                        onSelect={() => {
-                          setCategoriaFiltro("todas");
-                          setOpenCategoria(false);
-                        }}
+{/* --- BARRA DE FILTROS ESTILO SHADCN --- */}
+        <TooltipProvider delayDuration={200}>
+          <div className="flex flex-wrap gap-4 items-center mb-6">
+            
+            {/* Filtro de Fecha */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div> {/* Usamos un div limpio para no causar conflicto entre el popover y el tooltip */}
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button 
+                        variant="outline" 
+                        className={`w-[220px] justify-start text-left font-normal bg-white ${!fechaFiltro && "text-muted-foreground"}`}
                       >
-                        <Check
-                          className={`mr-2 h-4 w-4 ${categoriaFiltro === "todas" ? "opacity-100" : "opacity-0"}`}
-                        />
-                        Todas
-                      </CommandItem>
-                      {categorias.map((cat, index) => (
-                        <CommandItem
-                          key={index}
-                          value={cat}
-                          onSelect={() => {
-                            setCategoriaFiltro(cat);
-                            setOpenCategoria(false);
-                          }}
-                        >
-                          <Check
-                            className={`mr-2 h-4 w-4 ${categoriaFiltro === cat ? "opacity-100" : "opacity-0"}`}
-                          />
-                          {cat}
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
-                  </CommandList>
-                </Command>
-              </PopoverContent>
-            </Popover>
-          </div>
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {fechaFiltro ? format(fechaFiltro, "dd/MM/yyyy") : <span>Todas las fechas</span>}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={fechaFiltro}
+                        onSelect={setFechaFiltro}
+                        initialFocus
+                      />
+                      <div className="flex items-center justify-between p-2 border-t border-slate-100">
+                        <Button variant="ghost" size="sm" onClick={() => setFechaFiltro(null)} className="text-slate-600 hover:text-slate-900 font-normal h-8">
+                          Limpiar
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => setFechaFiltro(new Date())} className="text-blue-600 hover:text-blue-800 font-medium h-8">
+                          Hoy
+                        </Button>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent className="bg-slate-900 text-white rounded-lg text-xs px-3 py-1.5 border-none shadow-md">
+                Filtrar por fecha
+              </TooltipContent>
+            </Tooltip>
 
-          {/* Buscador de texto (Estilo Input Group Shadcn) */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-slate-700">Buscar por palabra:</label>
-            <div className="flex items-center w-[250px] rounded-xl border border-slate-200 bg-white px-3 shadow-sm focus-within:border-slate-400 focus-within:ring-4 focus-within:ring-slate-200">
-              {/* Ícono de la lupa a la izquierda */}
-              <Search className="h-4 w-4 text-slate-400 shrink-0" />
-              
-              {/* Input invisible que ocupa el centro */}
-              <input
-                type="text"
-                placeholder="Ej: huevo, ropa..."
-                value={busqueda}
-                onChange={(e) => setBusqueda(e.target.value)}
-                className="flex h-9 w-full border-0 bg-transparent px-2 py-1 text-sm shadow-none outline-none placeholder:text-slate-400"
-              />
-              
-              {/* NUEVO: Botón X para borrar rápido (solo aparece si hay texto) */}
-              {busqueda && (
-                <button 
-                  onClick={() => setBusqueda("")}
-                  className="text-slate-400 hover:text-slate-700 focus:outline-none p-1 transition-colors"
-                  title="Limpiar búsqueda"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              )}
-              
-              {/* Contador dinámico (le agregamos un borde izquierdo para separarlo) */}
-              {busqueda.trim() !== "" && (
-                <span className="text-xs text-slate-400 shrink-0 font-medium border-l border-slate-200 pl-2 ml-1">
-                  {eventos.length} res.
-                </span>
-              )}
-            </div>
+            {/* Filtro de Categoría */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div>
+                  <Popover open={openCategoria} onOpenChange={setOpenCategoria}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={openCategoria}
+                        className="w-[200px] justify-between bg-white font-normal text-slate-700 hover:bg-slate-50"
+                      >
+                        <span className="truncate">
+                          {categoriaFiltro === "todas"
+                            ? "Todas"
+                            : categorias.find((cat) => cat === categoriaFiltro) || categoriaFiltro}
+                        </span>
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[200px] p-0" align="start">
+                      <Command>
+                        <CommandInput placeholder="Buscar categoría..." />
+                        <CommandList>
+                          <CommandEmpty>No se encontró...</CommandEmpty>
+                          <CommandGroup>
+                            <CommandItem
+                              value="todas"
+                              onSelect={() => {
+                                setCategoriaFiltro("todas");
+                                setOpenCategoria(false);
+                              }}
+                            >
+                              <Check className={`mr-2 h-4 w-4 ${categoriaFiltro === "todas" ? "opacity-100" : "opacity-0"}`} />
+                              Todas
+                            </CommandItem>
+                            {categorias.map((cat, index) => (
+                              <CommandItem
+                                key={index}
+                                value={cat}
+                                onSelect={() => {
+                                  setCategoriaFiltro(cat);
+                                  setOpenCategoria(false);
+                                }}
+                              >
+                                <Check className={`mr-2 h-4 w-4 ${categoriaFiltro === cat ? "opacity-100" : "opacity-0"}`} />
+                                {cat}
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent className="bg-slate-900 text-white rounded-lg text-xs px-3 py-1.5 border-none shadow-md">
+                Filtrar por categoría
+              </TooltipContent>
+            </Tooltip>
+
+            {/* Buscador de texto */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center w-[250px] rounded-xl border border-slate-200 bg-white px-3 shadow-sm focus-within:border-slate-400 focus-within:ring-4 focus-within:ring-slate-200">
+                  <Search className="h-4 w-4 text-slate-400 shrink-0" />
+                  <input
+                    type="text"
+                    placeholder="Ej: huevo, ropa..."
+                    value={busqueda}
+                    onChange={(e) => setBusqueda(e.target.value)}
+                    className="flex h-9 w-full border-0 bg-transparent px-2 py-1 text-sm shadow-none outline-none placeholder:text-slate-400"
+                  />
+                  {busqueda && (
+                    <button 
+                      onClick={() => setBusqueda("")}
+                      className="text-slate-400 hover:text-slate-700 focus:outline-none p-1 transition-colors"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
+                  {busqueda.trim() !== "" && (
+                    <span className="text-xs text-slate-400 shrink-0 font-medium border-l border-slate-200 pl-2 ml-1">
+                      {eventos.length} res.
+                    </span>
+                  )}
+                </div>
+              </TooltipTrigger>
+              <TooltipContent className="bg-slate-900 text-white rounded-lg text-xs px-3 py-1.5 border-none shadow-md">
+                Buscar por palabra clave
+              </TooltipContent>
+            </Tooltip>
+
           </div>
-        </div>
+        </TooltipProvider>
 
         {/* --- TABLA --- */}
         <div className={`bg-white rounded-xl border shadow-sm overflow-hidden transition-opacity duration-200 ease-in-out ${isFetching ? "opacity-40 pointer-events-none" : "opacity-100"}`}>        <Table>
@@ -684,7 +681,7 @@ if (loading) {
 
       {/* --- MODAL PARA AGREGAR EVENTO --- */}
       <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-        <DialogContent className="sm:max-w-[500px] bg-white sm:rounded-2xl">
+        <DialogContent className="sm:max-w-[700px] bg-white sm:rounded-2xl">
           <DialogHeader>
             <DialogTitle>Agregar Nuevo Evento</DialogTitle>
             {/* Agregamos esto oculto (sr-only = Screen Reader Only) para calmar a Shadcn */}

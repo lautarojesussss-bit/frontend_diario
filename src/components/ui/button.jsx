@@ -13,15 +13,18 @@ const buttonVariants = cva(
           "bg-primary text-primary-foreground shadow hover:bg-primary/90",
         destructive:
           "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90",
+          
+        // 1. EL BORDE MÁS CLARO: Reemplazamos 'border-input' por 'border-slate-200' y el hover a 'bg-slate-50'
         outline:
-          "border border-input bg-background shadow-sm hover:bg-accent hover:text-accent-foreground",
+          "border-[0.5px] border-slate-200/80 bg-background shadow-sm hover:bg-slate-50 hover:text-accent-foreground",          
         secondary:
           "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
       },
       size: {
-        default: "h-9 px-4 py-2",
+        // 2. MENOS ESPACIO LIBRE: Cambiamos "h-9 px-4 py-2" por "h-9 px-3"
+        default: "h-9 px-3",
         sm: "h-8 rounded-md px-3 text-xs",
         lg: "h-10 rounded-md px-8",
         icon: "h-9 w-9",
