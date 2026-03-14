@@ -70,7 +70,7 @@ function AchievementItem({ evento, busqueda, onUpdate }) {
 
     try {
       // APUNTAMOS A LA NUEVA RUTA /api/
-      const res = await fetch(`http://localhost:5000/api/editar_evento/${id}`, {
+      const res = await fetch(`http://${window.location.hostname}:5000/api/editar_evento/${id}`, {
         method: 'POST',
         body: formPayload,
         credentials: "include"
@@ -82,17 +82,26 @@ function AchievementItem({ evento, busqueda, onUpdate }) {
         toast.success("Evento actualizado", {
           description: "Los cambios se guardaron exitosamente.",
         });
-
       }
-    } catch (error) {
+      else {
+        toast.error("Error al actualizar", {
+          description: "Hubo un problema en el servidor.",
+        });
+      }
+    } 
+    
+    catch (error) {
       console.error("Error al actualizar:", error);
+      toast.error("Error de conexión", {
+        description: "Revisá tu conexión o si el servidor está encendido.",
+      });
     }
   };
 
   // Función para borrar el evento usando la nueva ruta API
   const handleDelete = async () => {
     try {
-      const res = await fetch(`http://localhost:5000/api/borrar_evento/${id}`, {
+      const res = await fetch(`http://${window.location.hostname}:5000/api/borrar_evento/${id}`, {
         method: 'POST',
         credentials: "include"
       });
@@ -104,8 +113,18 @@ function AchievementItem({ evento, busqueda, onUpdate }) {
           description: "El registro fue borrado de tu diario.",
         });
       }
-    } catch (error) {
+      else {
+          toast.error("Error al eliminar", {
+            description: "No se pudo borrar el evento del servidor.",
+          });
+        } 
+    } 
+    
+    catch (error) {
       console.error("Error al eliminar:", error);
+      toast.error("Error de conexión", {
+        description: "No se pudo comunicar con la base de datos.",
+      });
     }
   };
 

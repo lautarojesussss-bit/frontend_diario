@@ -95,7 +95,7 @@ function App() {
     Object.keys(addFormData).forEach(k => payload.append(k, addFormData[k]));
 
     try {
-      const res = await fetch("http://localhost:5000/agregar_evento", {
+      const res = await fetch(`http://${window.location.hostname}:5000/agregar_evento`, {
         method: "POST",
         body: payload,
         credentials: "include"
@@ -111,16 +111,25 @@ function App() {
           description: "El registro ya se encuentra guardado en tu diario.",
         });
       }
+      else {
+        toast.error("Error al eliminar", {
+          description: "No se pudo borrar el evento del servidor.",
+        });
+      }
 
     } catch (error) {
+      // ESCENARIO 1: No hay internet o el servidor está apagado
       console.error("Error al crear:", error);
-    }
+      toast.error("Error de conexión", {
+        description: "No se pudo conectar con el servidor.",
+      });
+      }
   };
 
 
   const handleLogout = async () => {
     try {
-      await fetch("http://localhost:5000/auth/api/logout", { method: "POST", credentials: "include" });
+      await fetch(`http://${window.location.hostname}:5000/auth/api/logout`, { method: "POST", credentials: "include" });
       setIsLoggedIn(false);
       setUsername("");
       setEventos([]);
@@ -138,7 +147,7 @@ function App() {
     formData.append('avatar', file);
 
     try {
-      const res = await fetch("http://localhost:5000/auth/api/upload_avatar", {
+      const res = await fetch(`http://${window.location.hostname}:5000/auth/api/upload_avatar`, {
         method: "POST",
         body: formData,
         credentials: "include"
@@ -162,7 +171,7 @@ function App() {
   // Función para traer categorías
   const fetchCategorias = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/categorias", { credentials: "include" });
+      const res = await fetch(`http://${window.location.hostname}:5000/api/categorias`, { credentials: "include" });
       if (res.ok) {
         const data = await res.json();
         setCategorias(data);
@@ -176,7 +185,7 @@ function App() {
   const fetchEventos = async () => {
     setIsFetching(true); // <-- 1. Al instante ponemos la tabla borrosa
     try {
-      let url = new URL("http://localhost:5000/api/eventos");
+      let url = new URL(`http://${window.location.hostname}:5000/api/eventos`);
       
       if (fechaFiltro) url.searchParams.append("fecha", format(fechaFiltro, 'yyyy-MM-dd'));
       if (categoriaFiltro !== "todas") url.searchParams.append("categoria", categoriaFiltro);
@@ -202,7 +211,7 @@ function App() {
 
 const fetchProgreso = async () => {
     try {
-      const res = await fetch("http://localhost:5000/api/progreso", { credentials: "include" });
+      const res = await fetch(`http://${window.location.hostname}:5000/api/progreso`, { credentials: "include" });
       if (res.ok) {
         const data = await res.json();
         setProgresoCorto(data.corto_plazo || []);
@@ -217,7 +226,7 @@ const fetchProgreso = async () => {
   useEffect(() => {
     const verificarSesion = async () => {
       try {
-        const res = await fetch("http://localhost:5000/auth/api/check_auth", { credentials: "include" });
+        const res = await fetch(`http://${window.location.hostname}:5000/auth/api/check_auth`, { credentials: "include" });
         if (res.ok) {
           const data = await res.json();
           setUsername(data.username);
@@ -308,7 +317,7 @@ if (loading) {
                 <Avatar className="h-10 w-10 border-2 border-transparent group-hover:border-slate-300 transition-colors">
                   {/* Si hay URL muestra la imagen, si no, las iniciales */}
                   {avatarUrl ? (
-                    <AvatarImage src={avatarUrl} alt="Avatar" className="object-cover" />
+                    <AvatarImage src={`http://${window.location.hostname}:5000${avatarUrl}`} alt="Avatar" className="object-cover" />
                   ) : (
                     <AvatarFallback className="bg-slate-900 text-white font-medium">
                       {username ? username.substring(0, 2).toUpperCase() : <UserIcon className="h-4 w-4" />}

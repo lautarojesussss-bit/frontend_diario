@@ -11,7 +11,7 @@ export default function Graficos() {
   useEffect(() => {
     const fetchGraficos = async () => {
       try {
-        const res = await fetch("http://localhost:5000/api/progreso_graficos", { credentials: "include" });
+        const res = await fetch(`http://${window.location.hostname}:5000/api/progreso_graficos`, { credentials: "include" });
         if (res.ok) {
           const json = await res.json();
           setData(json);

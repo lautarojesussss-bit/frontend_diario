@@ -20,7 +20,7 @@ export default function Login({ onLoginSuccess }) {
 
     try {
       // Nota: asumo que tu prefijo en app.py es /auth
-      const res = await fetch(`http://localhost:5000/auth/api/${endpoint}`, {
+      const res = await fetch(`http://${window.location.hostname}:5000/auth/api/${endpoint}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
